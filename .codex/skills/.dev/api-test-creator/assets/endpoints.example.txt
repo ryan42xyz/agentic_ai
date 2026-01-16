@@ -1,0 +1,19 @@
+# One per line:
+# METHOD PATH EXPECT_STATUS [EXPECT_GREP_SUBSTRING] [TEST_OPTIONS]
+#
+# Basic format:
+GET /healthz 200 ok
+#
+# Negative test (expects failure):
+# POST /api/invalid 400 NEGATIVE
+#
+# JSON field comparison:
+# GET /api/user/123 200 JSON:$.name=John
+# GET /api/user/123 200 JSON:$.age=30 JSON:$.status=active
+#
+# Boundary checking (for POST/PUT with body):
+# POST /api/users 201 BOUNDARY:name=1,100 BOUNDARY:age=0,150
+#
+# Combined options:
+# POST /api/login 200 JSON:$.token=* BOUNDARY:email=5,255 NEGATIVE
+
