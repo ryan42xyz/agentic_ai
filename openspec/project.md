@@ -20,22 +20,24 @@ This document describes the current state and architecture of this repository as
 
 **Core Functionality**:
 - **OpenSpec Framework**: A specification-driven development system that enforces "spec before code" principles
-- **AI Engineering Assets**: Reusable skills, prompts, and workflows stored in `.ai/` directory
+- **AI Engineering Assets**: Reusable skills, prompts, and workflows stored in `.codex/` directory
 - **Change Management**: Structured workflow for proposals, reviews, implementations, and archiving
 - **Tool Agnosticism**: Assets designed to work across Cursor, CLI, and other AI agent tools
 
 **Key Components**:
-- **Skills System**: Reusable AI workflows under `.ai/skills/` (dev skills + domain skills)
-- **Prompts**: Agent bootstrap / workflow prompts under `.ai/prompts/`
+- **Skills System**: Reusable AI workflows under `.codex/skills/` (organized by category: control, decision, execution, cognition, domains, system)
+- **Prompts**: Agent bootstrap / workflow prompts under `.codex/prompts/`
 - **OpenSpec Workflow**: Proposal → review → apply → archive loop (documented under `openspec/`)
 - **Editor Integration**: Cursor slash-commands under `.cursor/commands/` for proposal/apply/archive scaffolding
 
 **Observations**:
 - Repository name: `agentic_ai`
 - Contains an `openspec/` directory (OpenSpec specification framework)
-- Contains a `.ai/` directory (AI engineering assets with skills and prompts)
+- Contains a `.codex/` directory (AI engineering assets with skills and prompts)
 - Contains a `.cursor/commands/` directory (Cursor command definitions)
 - Contains an `opensource/` directory with a vendored third-party repository (`opensource/awesome-claude-skills/`) that includes executable code (e.g., Python scripts) and its own dependency files (e.g., `requirements.txt` under some skills)
+- Contains a `dist/` directory with packaged skill files (`.skill` format)
+- Contains a `scripts/` directory with utility scripts
 - No language runtime or dependency manifests were found at repo root (no `package.json`, `pyproject.toml`, `requirements.txt`, `Cargo.toml`, `go.mod`)
 - Predominantly Markdown-based documentation/specification assets, plus small code/script artifacts under `opensource/`
 
@@ -44,7 +46,7 @@ This document describes the current state and architecture of this repository as
 **In scope (what this repo is for)**:
 - OpenSpec project context and AI behavior constraints (`openspec/project.md`, `openspec/AGENTS.md`)
 - OpenSpec change artifacts under `openspec/changes/` (proposals, reviews, and archives)
-- First-party, tool-agnostic AI skills and prompts under `.ai/`
+- First-party, tool-agnostic AI skills and prompts under `.codex/`
 - Editor workflow scaffolding under `.cursor/commands/`
 - Vendored third-party skill collections under `opensource/` (as included in this working tree)
 
@@ -68,7 +70,7 @@ This document describes the current state and architecture of this repository as
 **Observations**:
 - No traditional application code dependencies (`package.json`, `requirements.txt`, `pyproject.toml`, `Cargo.toml`, `go.mod`)
 - No single repo-wide runtime/language toolchain; code artifacts exist primarily under `opensource/`
-- First-party assets (`openspec/`, `.ai/`, `.cursor/`) are Markdown-first for portability and version control
+- First-party assets (`openspec/`, `.codex/`, `.cursor/`) are Markdown-first for portability and version control
 
 **Stated goals (as documented in repo docs)**:
 - Tool-agnostic, versionable assets
@@ -88,10 +90,10 @@ Several validators (compile/test/run/api_test) require “the standard project c
 
 ### Skill Conventions
 
-- **Location**: skills live under `.ai/skills/`, with dev-oriented skills in `.ai/skills/.dev/`.
-- **Metadata**: most skills use YAML frontmatter at the top of `SKILL.md` (or `skill.md` in the older verification skill).
+- **Location**: skills live under `.codex/skills/`, organized by category (e.g., `0_control/`, `1_decision/`, `2_execution/`, `cognition/`, `domains/`, `system/`, `.system/`).
+- **Metadata**: most skills use YAML frontmatter at the top of `SKILL.md`.
 - **Stage-gated workflows**: multi-step skills keep stage documents in `stages/` with numeric prefixes (e.g., `01_review.md`).
-- **Evidence-first validation**: the verification skill treats validators as evidence sources; failures must be reported verbatim; overrides require explicit human acknowledgement.
+- **Evidence-first validation**: validators treat outputs as evidence sources; failures must be reported verbatim; overrides require explicit human acknowledgement.
 
 ### OpenSpec Change Conventions
 
@@ -116,10 +118,10 @@ Several validators (compile/test/run/api_test) require “the standard project c
    - `changes/`: Change proposals and their lifecycle
    - `specs/`: Stable specifications (when changes are archived)
 
-2. **AI Engineering Assets** (`.ai/`):
+2. **AI Engineering Assets** (`.codex/`):
    - `skills/`: Reusable AI workflows and procedures
    - `prompts/`: System prompts and templates
-   - Organized by domain (`.dev/`, `blogs-writer/`, and other domain-specific skills)
+   - Skills organized by category (control, decision, execution, cognition, domains, system)
 
 3. **Workflow System**:
    - Four-stage cycle: proposal → review → apply → archive
@@ -149,7 +151,7 @@ Several validators (compile/test/run/api_test) require “the standard project c
    - All AI assets must be versionable and reusable across tools
 
 3. **Tool Agnosticism**:
-   - AI engineering assets in `.ai/` must work across Cursor, CLI, and other agents
+   - AI engineering assets in `.codex/` must work across Cursor, CLI, and other agents
    - Skills and prompts are version-controlled and reusable
 
 ### Inferred Constraints
@@ -166,10 +168,8 @@ Several validators (compile/test/run/api_test) require “the standard project c
 - **No Silent Edits**: All changes must be documented in proposals
 
 **File Organization**:
-- Skills organized by domain in `.ai/skills/`
-- Development skills in `.ai/skills/.dev/`
-- Domain-specific skills in separate directories
-- All prompts in `.ai/prompts/`
+- Skills organized by category in `.codex/skills/` (control, decision, execution, cognition, domains, system)
+- Prompts in `.codex/prompts/`
 
 **Testing and Validation**:
 - Verification system with compile, run, and test validators
@@ -185,18 +185,22 @@ Several validators (compile/test/run/api_test) require “the standard project c
 
 ```
 agentic_ai/
-├── .ai/                          # AI engineering assets (skills, prompts, documentation)
+├── .codex/                       # AI engineering assets (skills, prompts, configuration)
 │   ├── skills/                   # Reusable AI skills
-│   │   ├── .dev/                 # Development skills
-│   │   │   ├── openspec_change_apply/   # OpenSpec change execution skill (stage-gated)
-│   │   │   ├── requirement_analysis/    # Requirement analysis skill (stage-gated)
-│   │   │   └── verification/            # Validation policy + validators (skill.md)
-│   │   ├── blogs-writer/                # Blog writing skill (stage-gated)
-│   │   ├── red-team/                    # Adversarial review / audit skill (stage-gated)
-│   │   └── encore-oncall-fast-response/ # Oncall first-response skill
+│   │   ├── 0_control/            # Control layer skills (state_validator, state_diff_tracker, execution_state_compiler)
+│   │   ├── 1_decision/           # Decision layer skills (action_selector, plan_refiner)
+│   │   ├── 2_execution/          # Execution layer skills (change_authoring, execution_runner, info_retrieval)
+│   │   ├── cognition/            # Cognitive skills (brainstorming, critical-thinking, first-principles)
+│   │   ├── domains/              # Domain-specific skills (infra/oncall-fast-response, infra/oncall_checklister)
+│   │   ├── system/               # System-level skills (prompt-engineering, skill-creator, skill-installer)
+│   │   └── .system/              # System skills (skill-creator, skill-installer)
 │   ├── prompts/                  # System prompts and templates
-│   │   └── openspec_001.md       # Prompt notes / starter instructions (as stored)
-│   └── README.md                 # AI assets documentation
+│   │   ├── openspec-0-populate-proj-ctx.md
+│   │   ├── openspec-1-proposal.md
+│   │   ├── openspec-2-apply.md
+│   │   ├── openspec-100-archive.md
+│   │   └── openspec_001.md
+│   └── [config files]            # Codex configuration files
 ├── .cursor/                      # Cursor IDE integration
 │   └── commands/                 # Custom Cursor commands
 │       ├── openspec-apply.md
@@ -219,18 +223,40 @@ agentic_ai/
 
 ## Current Skills Inventory
 
-**Development Skills** (`.ai/skills/.dev/`):
-- `openspec_change_apply/`: Execute an OpenSpec change proposal (skill name: `change-execution`)
-- `requirement_analysis/`: Analyze and structure requirements (denoise → problem space → constraints → solution space)
-- `verification/`: Validation policy + validators (`compile`, `test`, `run`, `api_test`) with a pass/fail/block verdict model
+**Control Layer Skills** (`.codex/skills/0_control/`):
+- `state_validator/`: Validate execution state for logical, evidential, and structural integrity
+- `state_diff_tracker/`: Track meaningful state progression by diffing state snapshots
+- `execution_state_compiler/`: Compile execution traces into verifiable execution state
 
-**Domain Skills**:
-- `blogs-writer/`: Blog writing workflow (extract → outline lock → draft → red team → distill → final)
-- `encore-oncall-fast-response/`: Domain-specific skill for oncall fast response
-- `red-team/`: Adversarial review/audit workflow (scope → attack surface → test pack → patch plan)
+**Decision Layer Skills** (`.codex/skills/1_decision/`):
+- `action_selector/`: Translate approved plan actions into executable action declarations
+- `plan_refiner/`: Address unresolved uncertainties to refine plans
 
-**Prompts**:
-- `openspec_001.md`: Prompt notes / starter instructions for using OpenSpec + skills in this repo
+**Execution Layer Skills** (`.codex/skills/2_execution/`):
+- `change_authoring/`: Produce code changes as patch artifacts based on executable actions
+- `execution_runner/`: Execute declared commands/tests and capture raw output
+- `info_retrieval/`: Retrieve raw information and store as evidence
+
+**Cognition Skills** (`.codex/skills/cognition/`):
+- `brainstorming/`: Explore user intent, requirements, and design before implementation
+- `critical-thinking/`: Analyze claims with evidence standards and reasoning chains
+- `first-principles/`: Reason from first principles, rebuilding explanations from fundamental constraints
+
+**Domain Skills** (`.codex/skills/domains/`):
+- `infra/oncall-fast-response/`: Generate fast, safe, auditable responses for first-response oncall situations
+- `infra/oncall_checklister/`: Oncall checklist and triage workflow
+
+**System Skills** (`.codex/skills/system/`, `.codex/skills/.system/`):
+- `prompt-engineering/`: Guide for writing and optimizing prompts, commands, hooks, and skills
+- `skill-creator/`: Guide for creating effective skills
+- `skill-installer/`: Install skills from curated lists or GitHub repos
+
+**Prompts** (`.codex/prompts/`):
+- `openspec-0-populate-proj-ctx.md`: Populate and refine openspec/project.md
+- `openspec-1-proposal.md`: Create OpenSpec change proposals
+- `openspec-2-apply.md`: Apply OpenSpec changes
+- `openspec-100-archive.md`: Archive OpenSpec changes
+- `openspec_001.md`: Prompt notes / starter instructions
 
 ## Known Unknowns / Gaps (Need Human Input)
 
@@ -241,9 +267,9 @@ agentic_ai/
 
 ## Last Updated
 
-- **Date**: 2026-01-09
+- **Date**: 2025-01-11
 - **Method**: Repository scan + documentation review
-- **Confidence**: Medium (high confidence on repo structure; UNKNOWNs remain for ownership/audience, OpenSpec CLI installation, and verification command mapping)
+- **Confidence**: High (repository structure verified; UNKNOWNs remain for ownership/audience, OpenSpec CLI installation, and verification command mapping)
 
 ---
 
